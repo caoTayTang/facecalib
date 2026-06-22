@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import torch
 import numpy as np
 import cv2
-import pptk
+# import pptk
 import os
 
 #import kornia as K
