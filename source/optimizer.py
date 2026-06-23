@@ -652,12 +652,36 @@ class Optimizer():
 
     # visualize 3d points
     def plot3d(self,pt):
+        # import matplotlib.pyplot as plt
+        # from mpl_toolkits.mplot3d import Axes3D
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111, projection='3d')
+
+        # ax.scatter(pt[:,0],pt[:,1],pt[:,2])
+        # plt.show()
         import matplotlib.pyplot as plt
         from mpl_toolkits.mplot3d import Axes3D
+        import numpy as np
+
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
 
-        ax.scatter(pt[:,0],pt[:,1],pt[:,2])
+        pt = pt.detach().cpu().numpy()
+
+        ax.scatter(pt[:, 0], pt[:, 1], pt[:, 2], s=5)
+
+        # equal-ish scaling
+        max_range = (pt.max(axis=0) - pt.min(axis=0)).max()
+        mid = pt.mean(axis=0)
+
+        ax.set_xlim(mid[0] - max_range/2, mid[0] + max_range/2)
+        ax.set_ylim(mid[1] - max_range/2, mid[1] + max_range/2)
+        ax.set_zlim(mid[2] - max_range/2, mid[2] + max_range/2)
+
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+
         plt.show()
 
     # forward functions for solving 3D shape S

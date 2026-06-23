@@ -162,7 +162,9 @@ def predict():
         print("S:", S.shape)
         print("K:", K.shape)
         x_epnp = x.permute(0,2,1)
-        Xc, R, T = util.EPnP_(x_epnp, S, K)
+        Xc, R, T = util.EPnP_(x_epnp, S, K)  
+        # Perform warm start optimization  
+        S, K, R, T = optim.dualoptimization(x, max_iter=10)  
         reproj_error = losses.getError(
             x,
             S,
