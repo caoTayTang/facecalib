@@ -71,8 +71,8 @@ def predict():
         h, w = img.shape[:2]
         
         # resize landmarks to training resolution
-        landmarks[:, 0] *= 1.0 #640.0 / w
-        landmarks[:, 1] *= 1.0 #480.0 / h
+        landmarks[:, 0] *= 640.0 / w
+        landmarks[:, 1] *= 480.0 / h
 
         x = torch.tensor(
             landmarks,
@@ -120,8 +120,8 @@ def predict():
 
                 h, w = frame.shape[:2]
 
-                landmarks[:, 0] *= 1.0 # 640.0 / w
-                landmarks[:, 1] *= 1.0 # 480.0 / h
+                landmarks[:, 0] *= 640.0 / w
+                landmarks[:, 1] *= 480.0 / h
 
                 all_landmarks.append(landmarks)
 
@@ -152,9 +152,9 @@ def predict():
     # -------------------------
     
     print(f"DEBUG before: {landmarks.min()=}, {landmarks.max()=}")
-    cx = w / 2
-    cy = h / 2
-    optim.center = torch.tensor([cx, cy, 1.], device=optim.center.device)
+    # cx = w / 2
+    # cy = h / 2
+    # optim.center = torch.tensor([cx, cy, 1.], device=optim.center.device)
     # when using dualoptimization, we cannot no_grad
     # with torch.no_grad(): 
     K_all = optim.predict_intrinsic(x)
