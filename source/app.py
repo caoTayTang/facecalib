@@ -79,7 +79,8 @@ def predict():
             landmarks,
             dtype=torch.float32
         ).unsqueeze(0)
-
+        # (B,68,2) -> (B,2,68)
+        x = x.permute(0, 2, 1)
     # -------------------------
     # VIDEO
     # -------------------------
@@ -141,7 +142,7 @@ def predict():
             np.stack(all_landmarks),
             dtype=torch.float32
         )
-
+        x = x.permute(0, 2, 1)
     else:
         return jsonify({
             'error': 'Upload image or video'
@@ -180,7 +181,10 @@ def predict():
         'frames_used': int(x.shape[0]),
         'focal_length': float(K[0, 0]),
         'reprojection_error_px': float(reproj_error),
-        'intrinsics': K.cpu().numpy().tolist()
+        'intrinsics': K.cpu().numpy().tolist(),
+        # one pose per frame
+        'rotation_matrices': R.cpu().numpy().tolist(),
+        'translations': T.cpu().numpy().tolist()
     })
 
 
