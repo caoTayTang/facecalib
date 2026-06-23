@@ -901,24 +901,24 @@ class SyntheticLoader(Dataset):
         lm_eig = torch.from_numpy(self.lm_eigenvec).float().to(betas.device)
         sigma = torch.from_numpy(self.sigma).float().to(betas.device)
 
-        print("mu_s:", mu_s.shape)
-        print("lm_eig:", lm_eig.shape)
-        print("betas:", betas.shape)
+        # print("mu_s:", mu_s.shape)
+        # print("lm_eig:", lm_eig.shape)
+        # print("betas:", betas.shape)
 
         mu_s[:,2] = mu_s[:,2] * -1
         sigma = torch.diag(sigma.squeeze())
 
         lm_eig = torch.mm(lm_eig, sigma).unsqueeze(0).repeat(b,1,1)
 
-        print("lm_eig after:", lm_eig.shape)
+        # print("lm_eig after:", lm_eig.shape)
 
         tmp = torch.bmm(lm_eig, betas)
 
-        print("bmm output:", tmp.shape)
+        # print("bmm output:", tmp.shape)
 
         tmp = tmp.view(b,-1,3)
 
-        print("after view:", tmp.shape)
+        # print("after view:", tmp.shape)
 
         shape = mu_s.unsqueeze(0).repeat(b,1,1) + tmp
         return shape
