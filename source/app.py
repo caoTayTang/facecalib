@@ -71,8 +71,8 @@ def predict():
         h, w = img.shape[:2]
         
         # resize landmarks to training resolution
-        landmarks[:, 0] *= 640.0 / w
-        landmarks[:, 1] *= 480.0 / h
+        landmarks[:, 0] *= 1.0 #640.0 / w
+        landmarks[:, 1] *= 1.0 #480.0 / h
 
         x = torch.tensor(
             landmarks,
@@ -120,8 +120,8 @@ def predict():
 
                 h, w = frame.shape[:2]
 
-                landmarks[:, 0] *= 640.0 / w
-                landmarks[:, 1] *= 480.0 / h
+                landmarks[:, 0] *= 1.0 # 640.0 / w
+                landmarks[:, 1] *= 1.0 # 480.0 / h
 
                 all_landmarks.append(landmarks)
 
@@ -150,7 +150,7 @@ def predict():
     # -------------------------
     # Inference
     # -------------------------
-    print(f"DEBUG: {landmarks.min()=}, {landmarks.max()=}")
+    
     cx = w / 2
     cy = h / 2
     optim.center = torch.tensor([cx, cy, 1.], device=optim.center.device)
@@ -179,6 +179,11 @@ def predict():
         loss='l2'
     ).mean()
     print("Mean reproj error:", reproj_error.item(), "pixels")
+    print(f"DEBUG: {landmarks.min()=}, {landmarks.max()=}")
+    print("img shape:", img.shape)
+    print("landmarks range:", landmarks.min(), landmarks.max())
+    print("cx, cy:", K[0,2], K[1,2])
+    
 
     return jsonify({
         'frames_used': int(x.shape[0]),
