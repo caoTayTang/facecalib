@@ -151,6 +151,7 @@ def predict():
     # Inference
     # -------------------------
     
+    print(f"DEBUG before: {landmarks.min()=}, {landmarks.max()=}")
     cx = w / 2
     cy = h / 2
     optim.center = torch.tensor([cx, cy, 1.], device=optim.center.device)
@@ -179,10 +180,9 @@ def predict():
         loss='l2'
     ).mean()
     print("Mean reproj error:", reproj_error.item(), "pixels")
-    print(f"DEBUG: {landmarks.min()=}, {landmarks.max()=}")
-    print("img shape:", img.shape)
-    print("landmarks range:", landmarks.min(), landmarks.max())
-    print("cx, cy:", K[0,2], K[1,2])
+
+
+    print("landmarks range after:", landmarks.min(), landmarks.max())
     
 
     return jsonify({
