@@ -4,81 +4,161 @@ sys.modules['pptk'] = types.ModuleType('pptk')
 
 from flask import Flask, request, jsonify
 from flask_cloudflared import run_with_cloudflared
+
 import torch
+import cv2
+import tempfile
+import os
+import numpy as np
+
 from optimizer import Optimizer
 from face_align import FaceAlignmentExtractor
-import numpy as np
-from io import BytesIO
-from PIL import Image
 
 app = Flask(__name__)
 run_with_cloudflared(app)
 
-center = torch.tensor([960/2, 720/2, 1])
+# ---------------------------------------------------
+# Load model once
+# ---------------------------------------------------
+
+center = torch.tensor([320., 240., 1.])
+
 optim = Optimizer(center, for_inference=True)
 optim.load('00_')
-optim.calib_net.eval()
-optim.sfm_net.eval()
+optim.set_eval()
 
-extractor = FaceAlignmentExtractor(device='cuda' if torch.cuda.is_available() else 'cpu')
+extractor = FaceAlignmentExtractor(
+    device='cuda' if torch.cuda.is_available() else 'cpu'
+)
 
-@app.route('/health', methods=['GET'])
+# ---------------------------------------------------
+# Health endpoint
+# ---------------------------------------------------
+
+@app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'model': 'FaceCalib'})
+    return jsonify({'status': 'ok'})
+
+
+# ---------------------------------------------------
+# Main prediction endpoint
+# Accepts image OR video
+# ---------------------------------------------------
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Predict intrinsics from landmarks."""
-    data = request.json
-    x = torch.tensor(data['landmarks']).float().unsqueeze(0)
+
+    # -------------------------
+    # IMAGE
+    # -------------------------
+
+    if 'image' in request.files:
+
+        from PIL import Image
+        from io import BytesIO
+
+        file = request.files['image']
+
+        img = Image.open(BytesIO(file.read())).convert('RGB')
+        img = np.array(img)
+
+        landmarks = extractor.extract_landmarks(img)
+
+        if landmarks is None:
+            return jsonify({'error': 'No face detected'}), 400
+
+        h, w = img.shape[:2]
+
+        # resize landmarks to training resolution
+        landmarks[:, 0] *= 640.0 / w
+        landmarks[:, 1] *= 480.0 / h
+
+        x = torch.tensor(
+            landmarks,
+            dtype=torch.float32
+        ).unsqueeze(0)
+
+    # -------------------------
+    # VIDEO
+    # -------------------------
+
+    elif 'video' in request.files:
+
+        file = request.files['video']
+
+        with tempfile.NamedTemporaryFile(
+                delete=False,
+                suffix='.mp4') as tmp:
+
+            file.save(tmp.name)
+            path = tmp.name
+
+        cap = cv2.VideoCapture(path)
+
+        all_landmarks = []
+        frame_id = 0
+
+        while True:
+
+            ok, frame = cap.read()
+
+            if not ok:
+                break
+
+            # sample every 5th frame
+            if frame_id % 5 != 0:
+                frame_id += 1
+                continue
+
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            landmarks = extractor.extract_landmarks(frame)
+
+            if landmarks is not None:
+
+                h, w = frame.shape[:2]
+
+                landmarks[:, 0] *= 640.0 / w
+                landmarks[:, 1] *= 480.0 / h
+
+                all_landmarks.append(landmarks)
+
+            frame_id += 1
+
+            # enough frames
+            if len(all_landmarks) >= 50:
+                break
+
+        cap.release()
+        os.remove(path)
+
+        if len(all_landmarks) == 0:
+            return jsonify({'error': 'No face detected'}), 400
+
+        x = torch.tensor(
+            np.stack(all_landmarks),
+            dtype=torch.float32
+        )
+
+    else:
+        return jsonify({
+            'error': 'Upload image or video'
+        }), 400
+
+    # -------------------------
+    # Inference
+    # -------------------------
+
     with torch.no_grad():
         K = optim.predict_intrinsic(x)
-    f = K[0, 0, 0].item()
+        K = K.mean(0)
+
     return jsonify({
-        'focal_length': f,
-        'intrinsics': K.detach().cpu().numpy().tolist()
+        'frames_used': int(x.shape[0]),
+        'focal_length': float(K[0, 0]),
+        'intrinsics': K.cpu().numpy().tolist()
     })
 
-@app.route('/extract', methods=['POST'])
-def extract():
-    """Extract 68 landmarks from image."""
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image'}), 400
-    
-    file = request.files['image']
-    img = Image.open(BytesIO(file.read())).convert('RGB')
-    img_array = np.array(img)
-    
-    landmarks = extractor.extract_landmarks(img_array)
-    if landmarks is None:
-        return jsonify({'error': 'No face detected'}), 400
-    
-    return jsonify({'landmarks': landmarks.tolist()})
-
-@app.route('/full', methods=['POST'])
-def full_predict():
-    """Extract landmarks and predict intrinsics."""
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image'}), 400
-    
-    file = request.files['image']
-    img = Image.open(BytesIO(file.read())).convert('RGB')
-    img_array = np.array(img)
-    
-    landmarks = extractor.extract_landmarks(img_array)
-    if landmarks is None:
-        return jsonify({'error': 'No face detected'}), 400
-    
-    x = torch.tensor(landmarks).float().unsqueeze(0)
-    with torch.no_grad():
-        K = optim.predict_intrinsic(x)
-    f = K[0, 0, 0].item()
-    
-    return jsonify({
-        'landmarks': landmarks.tolist(),
-        'focal_length': f,
-        'intrinsics': K.detach().cpu().numpy().tolist()
-    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
