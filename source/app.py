@@ -153,18 +153,15 @@ def predict():
     # -------------------------
 
     with torch.no_grad():
-        K = optim.predict_intrinsic(x)
-        K = K.mean(dim=0, keepdim=True)  # average over frames
+        K_all = optim.predict_intrinsic(x)
+        # average intrinsics over all frames
+        K = K_all.mean(0).unsqueeze(0).repeat(x.shape[0],1,1)
         S = optim.get_shape(x)
-
-        # estimate pose for every frame
         Xc, R, T = util.EPnP_(
-            x.permute(0,2,1),
+            x,
             S,
             K
         )
-
-        # reprojection error
         reproj_error = losses.getError(
             x,
             S,
@@ -174,7 +171,6 @@ def predict():
             show=False,
             loss='l2'
         ).mean()
-
     print("Mean reproj error:", reproj_error.item(), "pixels")
 
     return jsonify({
