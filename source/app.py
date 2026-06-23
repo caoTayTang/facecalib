@@ -164,7 +164,7 @@ def predict():
         x_epnp = x.permute(0,2,1)
         Xc, R, T = util.EPnP_(x_epnp, S, K)
         reproj_error = losses.getError(
-            x_epnp,
+            x,
             S,
             R,
             T,
