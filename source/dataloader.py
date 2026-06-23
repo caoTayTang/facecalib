@@ -1184,3 +1184,64 @@ if __name__ == '__main__':
     print("sample made")
     print(sample.keys())
 
+
+class FaceAlignmentLoader(Dataset):
+    """Dataloader for extracting 68 face landmarks using face_alignment library."""
+    
+    def __init__(self, image_dir=None, image_paths=None, device='cpu'):
+        """
+        Initialize face_alignment landmark loader.
+        
+        Args:
+            image_dir: Directory containing image files
+            image_paths: List of image file paths (alternative to image_dir)
+            device: 'cpu' or 'cuda'
+        """
+        from face_align import FaceAlignmentExtractor
+        
+        self.extractor = FaceAlignmentExtractor(device=device)
+        self.image_paths = []
+        
+        if image_dir is not None:
+            if not os.path.isdir(image_dir):
+                raise ValueError(f"Directory not found: {image_dir}")
+            valid_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff'}
+            for fname in os.listdir(image_dir):
+                if os.path.splitext(fname)[1].lower() in valid_extensions:
+                    self.image_paths.append(os.path.join(image_dir, fname))
+            self.image_paths = sorted(self.image_paths)
+        
+        elif image_paths is not None:
+            if not isinstance(image_paths, list):
+                image_paths = [image_paths]
+            self.image_paths = image_paths
+        
+        if not self.image_paths:
+            raise ValueError("No images provided. Specify image_dir or image_paths.")
+        
+        self.N = 68
+        self.M = 100
+    
+    def __len__(self):
+        return len(self.image_paths)
+    
+    def __getitem__(self, idx):
+        image_path = self.image_paths[idx]
+        
+        img = io.imread(image_path)
+        if len(img.shape) == 3 and img.shape[2] == 4:
+            img = img[:, :, :3]
+        
+        landmarks = self.extractor.extract_landmarks(img)
+        
+        if landmarks is None:
+            raise RuntimeError(f"No face detected in image: {image_path}")
+        
+        sample = {
+            'fname': image_path,
+            'x_img': torch.from_numpy(landmarks).float(),
+            'image': torch.from_numpy(img).float() if img.dtype == np.uint8 else torch.from_numpy(img),
+        }
+        
+        return sample
+
