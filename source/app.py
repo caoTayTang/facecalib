@@ -23,8 +23,8 @@ run_with_cloudflared(app)
 # Load model once
 # ---------------------------------------------------
 
-# center = torch.tensor([320., 240., 1.])
-center = torch.tensor([w/2, h/2, 1.])
+center = torch.tensor([320., 240., 1.])
+# center = torch.tensor([w/2, h/2, 1.])
 
 optim = Optimizer(center, for_inference=True)
 optim.load('00_')
