@@ -23,7 +23,8 @@ run_with_cloudflared(app)
 # Load model once
 # ---------------------------------------------------
 
-center = torch.tensor([320., 240., 1.])
+# center = torch.tensor([320., 240., 1.])
+center = torch.tensor([w/2, h/2, 1.])
 
 optim = Optimizer(center, for_inference=True)
 optim.load('00_')
@@ -65,7 +66,7 @@ def predict():
         img = np.array(img)
 
         landmarks = extractor.extract_landmarks(img)
-
+        print(f"DEBUG: {landmarks.min()=}, {landmarks.max()=}")
         if landmarks is None:
             return jsonify({'error': 'No face detected'}), 400
 
@@ -156,7 +157,8 @@ def predict():
     # with torch.no_grad(): 
     K_all = optim.predict_intrinsic(x)
     # average intrinsics over all frames
-    K = K_all.mean(0).unsqueeze(0).repeat(x.shape[0],1,1)
+    # K = K_all.mean(0).unsqueeze(0).repeat(x.shape[0],1,1)
+    K = K_all
     S = optim.get_shape(x)
     
     print("x:", x.shape)
