@@ -18,12 +18,18 @@ import BPnP
 
 # optimizer for our camera calibration
 class Optimizer():
-    def __init__(self,center, gt=None,sfm_net=None,calib_net=None):
+    def __init__(self, center, gt=None, sfm_net=None, calib_net=None, for_inference=False):
         self.bpnp = BPnP.BPnP.apply
 
         # mean shape and eigenvectors for 3dmm
         self.visualize = False
-        self.data3dmm = dataloader.SyntheticLoader()
+        
+        # Only load SyntheticLoader for training, not for inference
+        if not for_inference:
+            self.data3dmm = dataloader.SyntheticLoader()
+        else:
+            self.data3dmm = None  # Not needed for inference
+        
         self.pbias = 300
         self.fbias = 300
         self.center = center
