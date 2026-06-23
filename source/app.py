@@ -24,7 +24,6 @@ run_with_cloudflared(app)
 # ---------------------------------------------------
 
 center = torch.tensor([320., 240., 1.])
-# center = torch.tensor([w/2, h/2, 1.])
 
 optim = Optimizer(center, for_inference=True)
 optim.load('00_')
@@ -66,12 +65,11 @@ def predict():
         img = np.array(img)
 
         landmarks = extractor.extract_landmarks(img)
-        print(f"DEBUG: {landmarks.min()=}, {landmarks.max()=}")
         if landmarks is None:
             return jsonify({'error': 'No face detected'}), 400
 
         h, w = img.shape[:2]
-
+        
         # resize landmarks to training resolution
         landmarks[:, 0] *= 640.0 / w
         landmarks[:, 1] *= 480.0 / h
@@ -152,7 +150,10 @@ def predict():
     # -------------------------
     # Inference
     # -------------------------
-
+    print(f"DEBUG: {landmarks.min()=}, {landmarks.max()=}")
+    cx = w / 2
+    cy = h / 2
+    optim.center = torch.tensor([cx, cy, 1.], device=optim.center.device)
     # when using dualoptimization, we cannot no_grad
     # with torch.no_grad(): 
     K_all = optim.predict_intrinsic(x)
@@ -167,7 +168,7 @@ def predict():
     x_epnp = x.permute(0,2,1)
     Xc, R, T = util.EPnP_(x_epnp, S, K)  
     # Perform warm start optimization  
-    S, K, R, T = optim.dualoptimization(x, max_iter=10)  
+    S, K, R, T = optim.dualoptimization(x, max_iter=5)  
     reproj_error = losses.getError(
         x,
         S,
