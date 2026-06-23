@@ -851,7 +851,7 @@ class SyntheticLoader(Dataset):
         exp_eigenvec = shape_data['exp_eigenvec']
         self.sigma = shape_data['sigma'] / 100
 
-        self.mu_lm = mu_lm.T
+        self.mu_lm = mu_lm
         self.mu_lm = self.mu_lm - np.mean(self.mu_lm,0)
 
         self.mu_exp= mu_exp.T
@@ -876,22 +876,51 @@ class SyntheticLoader(Dataset):
     def __len__(self):
         return 10000
 
-    # betas (199,1)
-    def get_3dmm(self,betas):
+    # # betas (199,1)
+    # def get_3dmm(self,betas):
+    #     b = betas.shape[0]
+    #     mu_s  = torch.from_numpy(self.mu_lm).float().to(betas.device).clone()
+    #     lm_eig = torch.from_numpy(self.lm_eigenvec).float().to(betas.device)
+    #     sigma = torch.from_numpy(self.sigma).float().to(betas.device)
+
+    #     mu_s[:,2] = mu_s[:,2] * -1
+    #     sigma = torch.diag(sigma.squeeze())
+
+    #     # adjust batch size
+    #     lm_eig = torch.mm(lm_eig, sigma).unsqueeze(0).repeat(b,1,1)
+
+    #     # predict batchwise 3d shapes
+    #     shape = mu_s.unsqueeze(0).repeat(b,1,1) + torch.bmm(lm_eig,betas).view(b,-1,3)
+    #     shape = shape - shape.mean(1).unsqueeze(1)
+    #     return shape
+    
+    def get_3dmm(self, betas):
         b = betas.shape[0]
+
         mu_s  = torch.from_numpy(self.mu_lm).float().to(betas.device).clone()
         lm_eig = torch.from_numpy(self.lm_eigenvec).float().to(betas.device)
         sigma = torch.from_numpy(self.sigma).float().to(betas.device)
 
+        print("mu_s:", mu_s.shape)
+        print("lm_eig:", lm_eig.shape)
+        print("betas:", betas.shape)
+
         mu_s[:,2] = mu_s[:,2] * -1
         sigma = torch.diag(sigma.squeeze())
 
-        # adjust batch size
         lm_eig = torch.mm(lm_eig, sigma).unsqueeze(0).repeat(b,1,1)
 
-        # predict batchwise 3d shapes
-        shape = mu_s.unsqueeze(0).repeat(b,1,1) + torch.bmm(lm_eig,betas).view(b,-1,3)
-        shape = shape - shape.mean(1).unsqueeze(1)
+        print("lm_eig after:", lm_eig.shape)
+
+        tmp = torch.bmm(lm_eig, betas)
+
+        print("bmm output:", tmp.shape)
+
+        tmp = tmp.view(b,-1,3)
+
+        print("after view:", tmp.shape)
+
+        shape = mu_s.unsqueeze(0).repeat(b,1,1) + tmp
         return shape
 
     def __getitem__(self,idx):
