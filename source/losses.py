@@ -62,7 +62,7 @@ def getError(pimg,pw,R,T,A,show=False,loss='l2'):
         proj = torch.bmm(A,pct)
     else:
         proj = torch.bmm(torch.stack([A]*M),pct)
-    proj_img = proj / (proj[:,-1,:].unsqueeze(1) + 1e-8)
+    proj_img = proj /proj[:,-1,:].unsqueeze(1)
     pimg_pred = proj_img[:,:2,:]
 
     # losses

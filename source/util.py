@@ -398,7 +398,7 @@ def setupM_(alphas,p_img,K):
 
     my_matrix = torch.zeros((b,2*n,12)).float().to(p_img.device)
     f = (K[:,0,0]+ K[:,1,1])*0.5
-    f = torch.clamp(f, min=1e-3, max=10.0)
+    
     px = K[:,0,2]
     py = K[:,1,2]
 
@@ -1915,7 +1915,6 @@ def EPnP_(x_i,x_w,K):
 
     # solve alphas
     alphas = solveAlphas_(x_w,c_w)
-    alphas = torch.nan_to_num(alphas, nan=0.0, posinf=0.0, neginf=0.0)
     # create matrix
     Matrix = setupM_(alphas,x_i,K)
 
