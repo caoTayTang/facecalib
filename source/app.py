@@ -157,13 +157,14 @@ def predict():
         # average intrinsics over all frames
         K = K_all.mean(0).unsqueeze(0).repeat(x.shape[0],1,1)
         S = optim.get_shape(x)
-        Xc, R, T = util.EPnP_(
-            x,
-            S,
-            K
-        )
+        
+        print("x:", x.shape)
+        print("S:", S.shape)
+        print("K:", K.shape)
+        x_epnp = x.permute(0,2,1)
+        Xc, R, T = util.EPnP_(x_epnp, S, K)
         reproj_error = losses.getError(
-            x,
+            x_epnp,
             S,
             R,
             T,
@@ -175,7 +176,7 @@ def predict():
 
     return jsonify({
         'frames_used': int(x.shape[0]),
-        'focal_length': float(K[0, 0]),
+        'focal_length': float(K[0, 0, 0]),
         'reprojection_error_px': float(reproj_error),
         'intrinsics': K.cpu().numpy().tolist(),
         # one pose per frame
