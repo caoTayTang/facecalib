@@ -152,28 +152,29 @@ def predict():
     # Inference
     # -------------------------
 
-    with torch.no_grad():
-        K_all = optim.predict_intrinsic(x)
-        # average intrinsics over all frames
-        K = K_all.mean(0).unsqueeze(0).repeat(x.shape[0],1,1)
-        S = optim.get_shape(x)
-        
-        print("x:", x.shape)
-        print("S:", S.shape)
-        print("K:", K.shape)
-        x_epnp = x.permute(0,2,1)
-        Xc, R, T = util.EPnP_(x_epnp, S, K)  
-        # Perform warm start optimization  
-        S, K, R, T = optim.dualoptimization(x, max_iter=10)  
-        reproj_error = losses.getError(
-            x,
-            S,
-            R,
-            T,
-            K,
-            show=False,
-            loss='l2'
-        ).mean()
+    # when using dualoptimization, we cannot no_grad
+    # with torch.no_grad(): 
+    K_all = optim.predict_intrinsic(x)
+    # average intrinsics over all frames
+    K = K_all.mean(0).unsqueeze(0).repeat(x.shape[0],1,1)
+    S = optim.get_shape(x)
+    
+    print("x:", x.shape)
+    print("S:", S.shape)
+    print("K:", K.shape)
+    x_epnp = x.permute(0,2,1)
+    Xc, R, T = util.EPnP_(x_epnp, S, K)  
+    # Perform warm start optimization  
+    S, K, R, T = optim.dualoptimization(x, max_iter=10)  
+    reproj_error = losses.getError(
+        x,
+        S,
+        R,
+        T,
+        K,
+        show=False,
+        loss='l2'
+    ).mean()
     print("Mean reproj error:", reproj_error.item(), "pixels")
 
     return jsonify({
