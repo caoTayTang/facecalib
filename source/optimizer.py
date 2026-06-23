@@ -681,7 +681,9 @@ class Optimizer():
     def predict_intrinsic(self,ptsI):
         #x = ptsI.permute(1,2,0).view(2,-1).unsqueeze(0)
         #k = self.calib_net(x).repeat(ptsI.shape[0],1)
-        k = self.calib_net(ptsI)
+        # Transpose from (batch, 68, 2) to (batch, 2, 68) for model input
+        ptsI_transposed = ptsI.transpose(1, 2)
+        k = self.calib_net(ptsI_transposed)
         k[:,0] = k[:,0] + self.fbias
         k[:,1:] = k[:,1:] + self.pbias
         return util.create_K(k)
