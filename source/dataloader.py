@@ -840,7 +840,8 @@ class SyntheticLoader(Dataset):
 
     def __init__(self):
 
-        root_dir = "../extras/shape_simple.mat"
+        # root_dir = "../extras/shape_simple.mat"
+        root_dir = "../data/face_alignment/300W_LP/Code/ModelGeneration/shape_simple.mat"
 
         # load shape data
         shape_data = scipy.io.loadmat(root_dir)

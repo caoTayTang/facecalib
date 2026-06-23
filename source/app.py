@@ -10,6 +10,8 @@ import cv2
 import tempfile
 import os
 import numpy as np
+import util
+import losses
 
 from optimizer import Optimizer
 from face_align import FaceAlignmentExtractor
@@ -151,11 +153,33 @@ def predict():
 
     with torch.no_grad():
         K = optim.predict_intrinsic(x)
-        K = K.mean(0)
+        K = K.mean(dim=0, keepdim=True)  # average over frames
+        S = optim.get_shape(x)
+
+        # estimate pose for every frame
+        Xc, R, T = util.EPnP_(
+            x.permute(0,2,1),
+            S,
+            K
+        )
+
+        # reprojection error
+        reproj_error = losses.getError(
+            x,
+            S,
+            R,
+            T,
+            K,
+            show=False,
+            loss='l2'
+        ).mean()
+
+    print("Mean reproj error:", reproj_error.item(), "pixels")
 
     return jsonify({
         'frames_used': int(x.shape[0]),
         'focal_length': float(K[0, 0]),
+        'reprojection_error_px': float(reproj_error),
         'intrinsics': K.cpu().numpy().tolist()
     })
 

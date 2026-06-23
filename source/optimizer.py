@@ -24,11 +24,7 @@ class Optimizer():
         # mean shape and eigenvectors for 3dmm
         self.visualize = False
         
-        # Only load SyntheticLoader for training, not for inference
-        if not for_inference:
-            self.data3dmm = dataloader.SyntheticLoader()
-        else:
-            self.data3dmm = None  # Not needed for inference
+        self.data3dmm = dataloader.SyntheticLoader()
         
         self.pbias = 300
         self.fbias = 300
