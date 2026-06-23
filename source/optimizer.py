@@ -23,7 +23,6 @@ class Optimizer():
 
         # mean shape and eigenvectors for 3dmm
         self.visualize = False
-        
         self.data3dmm = dataloader.SyntheticLoader()
         
         self.pbias = 300
@@ -51,6 +50,7 @@ class Optimizer():
                 lr = 1e-3)
         self.sfm_opt = torch.optim.Adam(self.sfm_net.parameters(),lr=1e-3)
         self.calib_opt = torch.optim.Adam(self.calib_net.parameters(),lr=1e-2)
+        self.gt = {}
 
 
     def set_eval(self):
