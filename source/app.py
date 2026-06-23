@@ -128,9 +128,9 @@ def predict():
 
             frame_id += 1
 
-            # enough frames
-            if len(all_landmarks) >= 50:
-                break
+            # # enough frames
+            # if len(all_landmarks) >= 50:
+            #     break
 
         cap.release()
         os.remove(path)
