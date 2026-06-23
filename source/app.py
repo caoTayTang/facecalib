@@ -17,6 +17,8 @@ run_with_cloudflared(app)
 center = torch.tensor([960/2, 720/2, 1])
 optim = Optimizer(center, for_inference=True)
 optim.load('00_')
+optim.calib_net.eval()
+optim.sfm_net.eval()
 
 extractor = FaceAlignmentExtractor(device='cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -29,7 +31,8 @@ def predict():
     """Predict intrinsics from landmarks."""
     data = request.json
     x = torch.tensor(data['landmarks']).float().unsqueeze(0)
-    K = optim.predict_intrinsic(x)
+    with torch.no_grad():
+        K = optim.predict_intrinsic(x)
     f = K[0, 0, 0].item()
     return jsonify({
         'focal_length': f,
@@ -67,7 +70,8 @@ def full_predict():
         return jsonify({'error': 'No face detected'}), 400
     
     x = torch.tensor(landmarks).float().unsqueeze(0)
-    K = optim.predict_intrinsic(x)
+    with torch.no_grad():
+        K = optim.predict_intrinsic(x)
     f = K[0, 0, 0].item()
     
     return jsonify({
